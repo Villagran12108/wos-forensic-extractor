@@ -105,42 +105,14 @@ jobs:
               raise RuntimeError("No Android app Gradle file found after flutter create.")
           PYEOF
 
-      - name: Compile ip7z/7zip (lib7zz.so) ARM64 PIE from source
+      - name: Download official 7-Zip ARM64 static binary (lib7zz.so)
         run: |
           mkdir -p android/app/src/main/jniLibs/arm64-v8a
-          WORKDIR="$(mktemp -d)"
-          git clone --depth 1 https://github.com/ip7z/7zip.git "$WORKDIR/7zip"
-
-          TOOLCHAIN="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64"
-          CC_BIN="$TOOLCHAIN/bin/aarch64-linux-android${ANDROID_API_LEVEL}-clang"
-          CXX_BIN="$TOOLCHAIN/bin/aarch64-linux-android${ANDROID_API_LEVEL}-clang++"
-          STRIP_BIN="$TOOLCHAIN/bin/llvm-strip"
-
-          sed -i 's/-lpthread//g' "$WORKDIR/7zip/CPP/7zip/7zip_gcc.mak"
-          sed -i 's/-Werror//g' "$WORKDIR/7zip/CPP/7zip/7zip_gcc.mak"
-          sed -i 's/-lpthread//g' "$WORKDIR/7zip/CPP/7zip/Bundles/Alone2/makefile.gcc"
-
-          make -C "$WORKDIR/7zip/CPP/7zip/Bundles/Alone2" \
-            -f makefile.gcc \
-            -j"$(nproc)" \
-            O=b/arm64 \
-            IS_ARM64=1 \
-            IS_X64= \
-            IS_X86= \
-            USE_ASM= \
-            MY_ARCH= \
-            CC="$CC_BIN -O2 -fPIE" \
-            CXX="$CXX_BIN -O2 -fPIE" \
-            LDFLAGS="-pie -static-libstdc++" \
-            LFLAGS_STRIP="-s"
-
-          BIN_7ZZ="$WORKDIR/7zip/CPP/7zip/Bundles/Alone2/b/arm64/7zz"
-          test -f "$BIN_7ZZ"
-          "$STRIP_BIN" --strip-unneeded "$BIN_7ZZ"
-          cp "$BIN_7ZZ" android/app/src/main/jniLibs/arm64-v8a/lib7zz.so
+          curl -L -o /tmp/7z-arm64.tar.xz https://7-zip.org
+          mkdir -p /tmp/7z-extracted
+          tar -xf /tmp/7z-arm64.tar.xz -C /tmp/7z-extracted
+          cp /tmp/7z-extracted/7zzs android/app/src/main/jniLibs/arm64-v8a/lib7zz.so
           chmod 755 android/app/src/main/jniLibs/arm64-v8a/lib7zz.so
-          file android/app/src/main/jniLibs/arm64-v8a/lib7zz.so
-          rm -rf "$WORKDIR"
 
       - name: Compile twogood/unshield (libunshield.so) ARM64 PIE from source
         run: |

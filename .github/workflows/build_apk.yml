@@ -75,27 +75,6 @@ jobs:
               p.write_text(txt)
           '
 
-      - name: Compile Unshield ARM64 PIE
-        env:
-          NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
-        run: |
-          TOOLCHAIN="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64"
-          git clone --depth 1 "https://github.com/twogood/unshield.git" /tmp/unshield-src
-          mkdir -p /tmp/unshield-build
-          cd /tmp/unshield-build
-          cmake /tmp/unshield-src \
-            -DCMAKE_TOOLCHAIN_FILE="$NDK_HOME/build/cmake/android.toolchain.cmake" \
-            -DANDROID_ABI=arm64-v8a \
-            -DANDROID_PLATFORM=android-28 \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_SHARED_LIBS=OFF \
-            -DUSE_OUR_OWN_MD5=ON \
-            -DCMAKE_EXE_LINKER_FLAGS="-pie"
-          cmake --build . --target unshield -j"$(nproc)"
-          "$TOOLCHAIN/bin/llvm-strip" src/unshield
-          cp src/unshield "$GITHUB_WORKSPACE/android/app/src/main/jniLibs/arm64-v8a/libunshield.so"
-          chmod 755 "$GITHUB_WORKSPACE/android/app/src/main/jniLibs/arm64-v8a/libunshield.so"
-
       - name: Verify native ARM64 ELF binaries
         run: |
           ls -lh android/app/src/main/jniLibs/arm64-v8a/

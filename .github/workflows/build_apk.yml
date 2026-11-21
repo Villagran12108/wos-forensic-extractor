@@ -31,7 +31,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential cmake ninja-build file
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;27.2.12479018" "cmake;3.22.1" "platforms;android-35" "build-tools;35.0.0"
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;27.2.12479018" "cmake;3.22.1" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Generate Android Gradle skeleton with flutter create
         run: |
@@ -47,7 +47,7 @@ jobs:
                   continue
               txt = p.read_text()
               if path_str.endswith(".kts"):
-                  txt = re.sub(r"compileSdk\s*=\s*flutter\.compileSdkVersion", "compileSdk = 35", txt)
+                  txt = re.sub(r"compileSdk\s*=\s*flutter\.compileSdkVersion", "compileSdk = 36", txt)
                   txt = re.sub(r"minSdk\s*=\s*flutter\.minSdkVersion", "minSdk = 24", txt)
                   txt = re.sub(r"targetSdk\s*=\s*flutter\.targetSdkVersion", "targetSdk = 35", txt)
                   if "abiFilters" not in txt:

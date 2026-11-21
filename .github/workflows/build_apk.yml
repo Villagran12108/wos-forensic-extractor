@@ -47,6 +47,7 @@ jobs:
                   continue
               txt = p.read_text()
               if path_str.endswith(".kts"):
+                  txt = re.sub(r"compileSdk\s*=\s*flutter\.compileSdkVersion", "compileSdk = 35", txt)
                   txt = re.sub(r"minSdk\s*=\s*flutter\.minSdkVersion", "minSdk = 24", txt)
                   txt = re.sub(r"targetSdk\s*=\s*flutter\.targetSdkVersion", "targetSdk = 35", txt)
                   if "abiFilters" not in txt:

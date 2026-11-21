@@ -1,0 +1,8 @@
+{
+  "name": "WoS Forensic Extractor",
+  "description": "Extractor forense y clasificador de recursos para Spider-Man: Web of Shadows (PC DVD / Xbox 360) con conversión de audio 48kHz lista para port.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

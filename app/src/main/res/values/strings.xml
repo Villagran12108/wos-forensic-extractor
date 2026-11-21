@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">WoS Forensic Extractor</string>
+    <string name="notification_channel_name">WoS Forensic Extraction</string>
+    <string name="notification_channel_desc">Mantiene activa la extracción y conversión forense de ISOs de 8+ GB en segundo plano.</string>
+
+    <string name="stage_ready">Listo para iniciar extracción o conversión forense</string>
+    <string name="stage_init_service">Iniciando Foreground Service y preparando entorno...</string>
+    <string name="stage_extract_done">Extracción forense completada al 100%</string>
+    <string name="stage_extract_error">Error durante la extracción</string>
+    <string name="stage_convert_init">Iniciando conversión por lotes para Port...</string>
+    <string name="stage_convert_done">Conversión para Port completada al 100%</string>
+    <string name="stage_convert_error">Error durante la conversión para Port</string>
+
+    <string name="card_extract_title">1. EXTRAER ISO COMPLETO</string>
+    <string name="btn_pick_iso">Elegir archivo .ISO</string>
+    <string name="btn_pick_output">Elegir carpeta de destino</string>
+    <string name="label_iso">ISO:</string>
+    <string name="label_output">Salida:</string>
+    <string name="none_selected">Ninguna seleccionada</string>
+    <string name="btn_start_extract">EXTRAER TODO PARA PORT</string>
+    <string name="btn_extracting">EXTRAYENDO ISO EN SEGUNDO PLANO...</string>
+
+    <string name="card_convert_title">2. CONVERTIR CARPETA EXTRAÍDA PARA PORT</string>
+    <string name="btn_pick_dump">Elegir carpeta WoS_Full_Port_Dump</string>
+    <string name="label_origin">Origen:</string>
+    <string name="origin_auto_hint">Ninguna seleccionada (se auto-asigna tras extraer ISO)</string>
+    <string name="btn_start_convert">2. CONVERTIR TODO PARA PORT</string>
+    <string name="btn_converting">CONVIRTIENDO RECURSOS PARA PORT...</string>
+
+    <string name="console_title">CONSOLA FORENSE EN TIEMPO REAL</string>
+    <string name="dialog_convert_done_title">Conversión Port Completada</string>
+    <string name="dialog_analyzed">Archivos analizados: %1$d</string>
+    <string name="dialog_converted">Convertidos con éxito: %1$d</string>
+    <string name="dialog_skipped">Omitidos (original conservado): %1$d</string>
+    <string name="dialog_folder_label">Carpeta WoS_Port_Ready_Converted:</string>
+    <string name="dialog_manifest_label">Manifiesto:</string>
+    <string name="dialog_ok">Entendido</string>
+
+    <string name="msg_select_iso_and_dir">Selecciona primero el archivo .ISO y la carpeta de destino.</string>
+    <string name="msg_select_dump_dir">Selecciona primero una carpeta WoS_Full_Port_Dump válida.</string>
+    <string name="msg_notif_denied">Permiso de notificaciones denegado; la notificación del servicio puede ocultarse.</string>
+</resources>

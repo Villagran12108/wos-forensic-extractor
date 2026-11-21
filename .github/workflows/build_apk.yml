@@ -105,7 +105,7 @@ jobs:
               raise RuntimeError("No Android app Gradle file found after flutter create.")
           PYEOF
 
-      - name: Compile 7-Zip ARM64 PIE from GitHub mirror
+      - name: Compile 7-Zip ARM64 PIE from mcmilk/7-Zip-zstd
         env:
           NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
         run: |
@@ -114,7 +114,7 @@ jobs:
           git clone --depth 1 https://github.com /tmp/7zip-src
           cd /tmp/7zip-src/CPP/7zip/Bundles/Alone2
           mkdir -p _o
-          make -j"$(nproc)" -f ../../cmpl_gcc.mak             CC="$TOOLCHAIN/bin/aarch64-linux-android28-clang -fPIE"             CXX="$TOOLCHAIN/bin/aarch64-linux-android28-clang++ -fPIE"             LDFLAGS="-pie -ldl"             O="_o"
+          make -j"$(nproc)" -f ../../cmpl_gcc.mak             CC="$TOOLCHAIN/bin/aarch64-linux-android28-clang -fPIE -D_7ZIP_AFFINITY_DISABLE=1"             CXX="$TOOLCHAIN/bin/aarch64-linux-android28-clang++ -fPIE -D_7ZIP_AFFINITY_DISABLE=1"             LDFLAGS="-pie -ldl"             O="_o"
           "$TOOLCHAIN/bin/llvm-strip" _o/7zz
           cp _o/7zz "$GITHUB_WORKSPACE/android/app/src/main/jniLibs/arm64-v8a/lib7zz.so"
           chmod 755 "$GITHUB_WORKSPACE/android/app/src/main/jniLibs/arm64-v8a/lib7zz.so"

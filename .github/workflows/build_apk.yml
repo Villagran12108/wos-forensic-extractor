@@ -100,6 +100,32 @@ subprojects {
 """
                   rp.write_text(rtxt + patch)
 
+          for root_str in ["android/build.gradle.kts", "android/build.gradle"]:
+              rp = pathlib.Path(root_str)
+              if not rp.exists():
+                  continue
+              rtxt = rp.read_text()
+              if "subprojects" in rtxt and "compileSdk" not in rtxt:
+                  if root_str.endswith(".kts"):
+                      patch = """
+subprojects {
+    afterEvaluate {
+        extensions.findByType<com.android.build.gradle.BaseExtension>()?.compileSdkVersion(36)
+    }
+}
+"""
+                  else:
+                      patch = """
+subprojects {
+    afterEvaluate {
+        if (project.hasProperty("android")) {
+            project.android.compileSdkVersion 36
+        }
+    }
+}
+"""
+                  rp.write_text(rtxt + patch)
+
           '
 
       - name: Verify native ARM64 ELF binaries

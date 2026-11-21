@@ -43,7 +43,7 @@ jobs:
           echo "flutter.minSdkVersion=24" >> android/local.properties
           echo "flutter.targetSdkVersion=35" >> android/local.properties
           if [ -f android/build.gradle.kts ]; then
-            printf '\nsubprojects {\n    afterEvaluate {\n        extensions.findByType<com.android.build.gradle.BaseExtension>()?.compileSdkVersion(36)\n    }\n}\n' >> android/build.gradle.kts
+            printf '\nsubprojects {\n    val applySdk: (Project) -> Unit = { p -> p.extensions.findByType<com.android.build.gradle.BaseExtension>()?.compileSdkVersion(36) }\n    if (state.executed) { applySdk(this) } else { afterEvaluate { applySdk(this) } }\n}\n' >> android/build.gradle.kts
           fi
           if [ -f android/build.gradle ]; then
             printf '\nsubprojects {\n    afterEvaluate {\n        if (project.hasProperty("android")) {\n            project.android.compileSdkVersion 36\n        }\n    }\n}\n' >> android/build.gradle

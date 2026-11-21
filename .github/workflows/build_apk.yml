@@ -75,21 +75,11 @@ jobs:
               p.write_text(txt)
           '
 
-      - name: Install prebuilt Android ARM64 7-Zip & Compile Unshield
+      - name: Compile Unshield ARM64 PIE
         env:
           NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
         run: |
-          mkdir -p android/app/src/main/jniLibs/arm64-v8a /tmp/t7z
           TOOLCHAIN="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64"
-
-          curl -sL "https://packages-cf.termux.dev/apt/termux-main/dists/stable/main/binary-aarch64/Packages" -o /tmp/t7z/Packages
-          PKG_PATH=$(grep -A 15 "^Package: p7zip$" /tmp/t7z/Packages | grep "^Filename:" | head -n 1 | awk "{print \$2}")
-          curl -sL "https://packages-cf.termux.dev/apt/termux-main/$PKG_PATH" -o /tmp/t7z/p7zip.deb
-          cd /tmp/t7z && ar x p7zip.deb && tar -xf data.tar.*
-          BIN_7Z=$(find /tmp/t7z/data -type f -name "7z" -o -name "7zz" | head -n 1)
-          cp "$BIN_7Z" "$GITHUB_WORKSPACE/android/app/src/main/jniLibs/arm64-v8a/lib7zz.so"
-          chmod 755 "$GITHUB_WORKSPACE/android/app/src/main/jniLibs/arm64-v8a/lib7zz.so"
-
           git clone --depth 1 "https://github.com/twogood/unshield.git" /tmp/unshield-src
           mkdir -p /tmp/unshield-build
           cd /tmp/unshield-build

@@ -2,19 +2,13 @@ name: Build WoS Forensic Extractor ARM64 APK
 
 on:
   push:
-    branches:
-      - main
-      - master
+    branches: [ main, master ]
   workflow_dispatch:
 
 jobs:
-  build-arm64-apk:
+  build_android_arm64:
     name: Compile Native Tools (7zz + unshield) & Flutter ARM64 APK
     runs-on: ubuntu-latest
-
-    env:
-      ANDROID_NDK_VERSION: "26.3.11579264"
-      ANDROID_API_LEVEL: "24"
 
     steps:
       - name: Checkout repository
@@ -23,141 +17,117 @@ jobs:
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          distribution: "temurin"
-          java-version: "17"
+          distribution: 'temurin'
+          java-version: '17'
 
       - name: Set up Flutter (Stable)
         uses: subosito/flutter-action@v2
         with:
-          channel: "stable"
+          channel: 'stable'
           cache: true
 
       - name: Install build dependencies and Android NDK
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            cmake ninja-build make git python3 file binutils
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;${ANDROID_NDK_VERSION}"
-          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/${ANDROID_NDK_VERSION}" >> "$GITHUB_ENV"
+          sudo apt-get install -y build-essential cmake ninja-build file
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;27.2.12479018" "cmake;3.22.1" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Generate Android Gradle skeleton with flutter create
         run: |
-          flutter create . \
-            --org com.example \
-            --project-name wos_forensic_extractor \
-            --platforms android
+          flutter create . --org com.example --project-name wos_forensic_extractor --platforms android
 
       - name: Patch generated Gradle config for minSdk 24, arm64-v8a & extractNativeLibs
         run: |
-          python3 - <<'PYEOF'
+          python3 -c '
           import pathlib, re
+          for path_str in ["android/app/build.gradle.kts", "android/app/build.gradle"]:
+              p = pathlib.Path(path_str)
+              if not p.exists():
+                  continue
+              txt = p.read_text()
+              if path_str.endswith(".kts"):
+                  txt = re.sub(r"minSdk\s*=\s*flutter\.minSdkVersion", "minSdk = 24", txt)
+                  txt = re.sub(r"targetSdk\s*=\s*flutter\.targetSdkVersion", "targetSdk = 35", txt)
+                  if "abiFilters" not in txt:
+                      txt = txt.replace(
+                          "minSdk = 24",
+                          "minSdk = 24\n        ndk { abiFilters += listOf(\"arm64-v8a\") }"
+                      )
+                  if "useLegacyPackaging" not in txt:
+                      txt = txt.replace(
+                          "android {",
+                          "android {\n    packaging {\n        jniLibs {\n            useLegacyPackaging = true\n        }\n    }"
+                      )
+              else:
+                  txt = re.sub(r"minSdkVersion\s+flutter\.minSdkVersion", "minSdkVersion 24", txt)
+                  txt = re.sub(r"targetSdkVersion\s+flutter\.targetSdkVersion", "targetSdkVersion 35", txt)
+                  if "abiFilters" not in txt:
+                      txt = txt.replace(
+                          "minSdkVersion 24",
+                          "minSdkVersion 24\n        ndk { abiFilters \"arm64-v8a\" }"
+                      )
+                  if "useLegacyPackaging" not in txt:
+                      txt = txt.replace(
+                          "android {",
+                          "android {\n    packagingOptions {\n        jniLibs {\n            useLegacyPackaging = true\n        }\n    }"
+                      )
+              p.write_text(txt)
+          '
 
-          kts = pathlib.Path("android/app/build.gradle.kts")
-          groovy = pathlib.Path("android/app/build.gradle")
-
-          if kts.exists():
-              txt = kts.read_text()
-              txt = txt.replace("minSdk = flutter.minSdkVersion", "minSdk = 24")
-              txt = re.sub(r"minSdk\s*=\s*\d+", "minSdk = 24", txt)
-              if "useLegacyPackaging" not in txt:
-                  injection = (
-                      "\n    packaging {\n"
-                      "        jniLibs {\n"
-                      "            useLegacyPackaging = true\n"
-                      "        }\n"
-                      "    }\n"
-                  )
-                  txt = re.sub(r"(android\s*\{)", r"\1" + injection, txt, count=1)
-              if "abiFilters" not in txt:
-                  ndk_block = (
-                      "\n        ndk {\n"
-                      '            abiFilters += listOf("arm64-v8a")\n'
-                      "        }\n"
-                  )
-                  txt = re.sub(r"(defaultConfig\s*\{)", r"\1" + ndk_block, txt, count=1)
-              kts.write_text(txt)
-              print("Patched android/app/build.gradle.kts")
-          elif groovy.exists():
-              txt = groovy.read_text()
-              txt = txt.replace("minSdkVersion flutter.minSdkVersion", "minSdkVersion 24")
-              txt = txt.replace("minSdk = flutter.minSdkVersion", "minSdk = 24")
-              txt = re.sub(r"minSdkVersion\s+\d+", "minSdkVersion 24", txt)
-              if "useLegacyPackaging" not in txt:
-                  injection = (
-                      "\n    packagingOptions {\n"
-                      "        jniLibs {\n"
-                      "            useLegacyPackaging true\n"
-                      "        }\n"
-                      "    }\n"
-                  )
-                  txt = re.sub(r"(android\s*\{)", r"\1" + injection, txt, count=1)
-              if "abiFilters" not in txt:
-                  ndk_block = (
-                      "\n        ndk {\n"
-                      '            abiFilters "arm64-v8a"\n'
-                      "        }\n"
-                  )
-                  txt = re.sub(r"(defaultConfig\s*\{)", r"\1" + ndk_block, txt, count=1)
-              groovy.write_text(txt)
-              print("Patched android/app/build.gradle")
-          else:
-              raise RuntimeError("No Android app Gradle file found after flutter create.")
-          PYEOF
-
-      - name: Compile 7-Zip ARM64 PIE from mcmilk/7-Zip-zstd
+      - name: Compile 7-Zip and Unshield ARM64 PIE
         env:
           NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
         run: |
           mkdir -p android/app/src/main/jniLibs/arm64-v8a
           TOOLCHAIN="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64"
-          git clone --depth 1 https://github.com /tmp/7zip-src
+          REPO_7Z=$(printf 'https://%s/%s/%s.git' 'github.com' 'mcmilk' '7-Zip-zstd')
+          REPO_UNSHIELD=$(printf 'https://%s/%s/%s.git' 'github.com' 'twogood' 'unshield')
+
+          git clone --depth 1 "$REPO_7Z" /tmp/7zip-src
           cd /tmp/7zip-src/CPP/7zip/Bundles/Alone2
           mkdir -p _o
-          make -j"$(nproc)" -f ../../cmpl_gcc.mak             CC="$TOOLCHAIN/bin/aarch64-linux-android28-clang -fPIE -D_7ZIP_AFFINITY_DISABLE=1"             CXX="$TOOLCHAIN/bin/aarch64-linux-android28-clang++ -fPIE -D_7ZIP_AFFINITY_DISABLE=1"             LDFLAGS="-pie -ldl"             O="_o"
+          make -j"$(nproc)" -f ../../cmpl_gcc.mak \
+            CC="$TOOLCHAIN/bin/aarch64-linux-android28-clang -fPIE -D_7ZIP_AFFINITY_DISABLE=1" \
+            CXX="$TOOLCHAIN/bin/aarch64-linux-android28-clang++ -fPIE -D_7ZIP_AFFINITY_DISABLE=1" \
+            LDFLAGS="-pie -ldl" \
+            O="_o"
           "$TOOLCHAIN/bin/llvm-strip" _o/7zz
           cp _o/7zz "$GITHUB_WORKSPACE/android/app/src/main/jniLibs/arm64-v8a/lib7zz.so"
           chmod 755 "$GITHUB_WORKSPACE/android/app/src/main/jniLibs/arm64-v8a/lib7zz.so"
 
-      - name: Compile twogood/unshield (libunshield.so) ARM64 PIE from source
-        run: |
-          mkdir -p android/app/src/main/jniLibs/arm64-v8a
-          WORKDIR="$(mktemp -d)"
-          git clone --depth 1 https://github.com/twogood/unshield.git "$WORKDIR/unshield"
-
-          STRIP_BIN="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip"
-
-          cmake -S "$WORKDIR/unshield" -B "$WORKDIR/build" \
-            -G Ninja \
-            -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" \
+          git clone --depth 1 "$REPO_UNSHIELD" /tmp/unshield-src
+          mkdir -p /tmp/unshield-build
+          cd /tmp/unshield-build
+          cmake /tmp/unshield-src \
+            -DCMAKE_TOOLCHAIN_FILE="$NDK_HOME/build/cmake/android.toolchain.cmake" \
             -DANDROID_ABI=arm64-v8a \
-            -DANDROID_PLATFORM="android-${ANDROID_API_LEVEL}" \
+            -DANDROID_PLATFORM=android-28 \
             -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_SHARED_LIBS=OFF \
-            -DBUILD_STATIC=ON \
             -DUSE_OUR_OWN_MD5=ON \
-            -DCMAKE_C_FLAGS="-O2 -fPIE" \
             -DCMAKE_EXE_LINKER_FLAGS="-pie"
+          cmake --build . --target unshield -j"$(nproc)"
+          "$TOOLCHAIN/bin/llvm-strip" src/unshield
+          cp src/unshield "$GITHUB_WORKSPACE/android/app/src/main/jniLibs/arm64-v8a/libunshield.so"
+          chmod 755 "$GITHUB_WORKSPACE/android/app/src/main/jniLibs/arm64-v8a/libunshield.so"
 
-          cmake --build "$WORKDIR/build" --target unshield -j"$(nproc)"
-
-          BIN_UNSHIELD="$(find "$WORKDIR/build" -maxdepth 3 -type f -name 'unshield' -executable | head -n 1)"
-          test -n "$BIN_UNSHIELD" && test -f "$BIN_UNSHIELD"
-          "$STRIP_BIN" --strip-unneeded "$BIN_UNSHIELD"
-          cp "$BIN_UNSHIELD" android/app/src/main/jniLibs/arm64-v8a/libunshield.so
-          chmod 755 android/app/src/main/jniLibs/arm64-v8a/libunshield.so
+      - name: Verify native ARM64 ELF binaries
+        run: |
+          ls -lh android/app/src/main/jniLibs/arm64-v8a/
+          file android/app/src/main/jniLibs/arm64-v8a/lib7zz.so
           file android/app/src/main/jniLibs/arm64-v8a/libunshield.so
-          rm -rf "$WORKDIR"
 
       - name: Install Flutter dependencies
         run: flutter pub get
 
-      - name: Build Android ARM64 Release APK
+      - name: Build Flutter Release APK (ARM64)
         run: flutter build apk --release --target-platform android-arm64
 
-      - name: Upload APK artifact
+      - name: Upload Release APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: wos-forensic-extractor-arm64-apk
+          name: WoS-Forensic-Extractor-ARM64-APK
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
+          retention-days: 30

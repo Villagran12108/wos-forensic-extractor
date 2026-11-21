@@ -75,28 +75,22 @@ jobs:
               p.write_text(txt)
           '
 
-      - name: Compile 7-Zip and Unshield ARM64 PIE
+      - name: Install prebuilt Android ARM64 7-Zip & Compile Unshield
         env:
           NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
         run: |
-          mkdir -p android/app/src/main/jniLibs/arm64-v8a
+          mkdir -p android/app/src/main/jniLibs/arm64-v8a /tmp/t7z
           TOOLCHAIN="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64"
-          REPO_7Z=$(printf 'https://%s/%s/%s.git' 'github.com' 'mcmilk' '7-Zip-zstd')
-          REPO_UNSHIELD=$(printf 'https://%s/%s/%s.git' 'github.com' 'twogood' 'unshield')
 
-          git clone --depth 1 "$REPO_7Z" /tmp/7zip-src
-          cd /tmp/7zip-src/CPP/7zip/Bundles/Alone2
-          mkdir -p _o
-          make -j"$(nproc)" -f ../../cmpl_gcc.mak \
-            CC="$TOOLCHAIN/bin/aarch64-linux-android28-clang -fPIE -D_7ZIP_AFFINITY_DISABLE=1" \
-            CXX="$TOOLCHAIN/bin/aarch64-linux-android28-clang++ -fPIE -D_7ZIP_AFFINITY_DISABLE=1" \
-            LDFLAGS="-pie -ldl" \
-            O="_o"
-          "$TOOLCHAIN/bin/llvm-strip" _o/7zz
-          cp _o/7zz "$GITHUB_WORKSPACE/android/app/src/main/jniLibs/arm64-v8a/lib7zz.so"
+          curl -sL "https://packages-cf.termux.dev/apt/termux-main/dists/stable/main/binary-aarch64/Packages" -o /tmp/t7z/Packages
+          PKG_PATH=$(grep -A 15 "^Package: p7zip$" /tmp/t7z/Packages | grep "^Filename:" | head -n 1 | awk "{print \$2}")
+          curl -sL "https://packages-cf.termux.dev/apt/termux-main/$PKG_PATH" -o /tmp/t7z/p7zip.deb
+          cd /tmp/t7z && ar x p7zip.deb && tar -xf data.tar.*
+          BIN_7Z=$(find /tmp/t7z/data -type f -name "7z" -o -name "7zz" | head -n 1)
+          cp "$BIN_7Z" "$GITHUB_WORKSPACE/android/app/src/main/jniLibs/arm64-v8a/lib7zz.so"
           chmod 755 "$GITHUB_WORKSPACE/android/app/src/main/jniLibs/arm64-v8a/lib7zz.so"
 
-          git clone --depth 1 "$REPO_UNSHIELD" /tmp/unshield-src
+          git clone --depth 1 "https://github.com/twogood/unshield.git" /tmp/unshield-src
           mkdir -p /tmp/unshield-build
           cd /tmp/unshield-build
           cmake /tmp/unshield-src \
